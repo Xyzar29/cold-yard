@@ -46,7 +46,10 @@ export function createHud() {
 
   return {
     els,
-    showMenu(show) { els.menu.style.display = show ? 'flex' : 'none'; },
+    showMenu(show) {
+      els.menu.style.display = show ? 'flex' : 'none';
+      document.body.classList.toggle('menu-open', show);
+    },
     showOver(title, sub) {
       els.overTitle.textContent = title;
       els.overSub.textContent = sub;

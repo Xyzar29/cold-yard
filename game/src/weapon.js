@@ -128,8 +128,8 @@ export function buildViewmodel(teamColour) {
     { p: [0, -0.1, -0.26], s: [0.05, 0.13, 0.09], m: mid },
     { p: [0, -0.01, -0.02], s: [0.06, 0.09, 0.18], m: dark },
     { p: [0, -0.085, -0.08], s: [0.045, 0.1, 0.05], m: dark },
-    { p: [0, 0.085, -0.36], s: [0.02, 0.05, 0.1], m: accent },
-    { p: [0.045, -0.03, -0.3], s: [0.012, 0.05, 0.2], m: accent },
+    { p: [0, 0.078, -0.36], s: [0.016, 0.038, 0.08], m: accent },
+    { p: [0.037, -0.02, -0.3], s: [0.01, 0.036, 0.16], m: accent },
   ];
   for (const part of parts) {
     const mesh = new THREE.Mesh(geo, part.m);

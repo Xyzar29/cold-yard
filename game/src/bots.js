@@ -140,6 +140,8 @@ export function resetBot(bot, spawn, job) {
   bot.knownPos = null;
   bot.channelT = 0;
   bot.blindT = 0;
+  bot.detourT = 0;
+  bot.stuckT = 0;
   bot.burstLeft = 0;
   bot.burstPauseT = 0;
   bot.crouched = false;
@@ -291,17 +293,38 @@ export function updateBot(bot, dt, ctx) {
   }
 
   bot.crouched = wantCrouch;
-  // --- Movement.
+  // --- Movement, with a stuck escape: if the direct line is blocked (a container
+  // corner on the waypoint line), step sideways around it instead of pushing forever.
   if (moveTarget) {
-    const dx = moveTarget.x - bot.pos.x;
-    const dz = moveTarget.z - bot.pos.z;
-    const d = Math.hypot(dx, dz);
+    let tx = moveTarget.x;
+    let tz = moveTarget.z;
+    let dx = tx - bot.pos.x;
+    let dz = tz - bot.pos.z;
+    let d = Math.hypot(dx, dz);
+    if (bot.detourT > 0 && d > 0.05) {
+      bot.detourT -= dt;
+      tx += (-dz / d) * bot.detourSide * 2.6;
+      tz += (dx / d) * bot.detourSide * 2.6;
+      dx = tx - bot.pos.x;
+      dz = tz - bot.pos.z;
+      d = Math.hypot(dx, dz);
+    }
     if (d > 0.05) {
       const step = Math.min(d, moveTarget.speed * dt);
       const moved = collideMove(bot.pos.x, bot.pos.z, 0.35, (dx / d) * step, (dz / d) * step);
       bot.speed = Math.hypot(moved.x - bot.pos.x, moved.z - bot.pos.z) / Math.max(dt, 1e-4);
       bot.pos.x = moved.x;
       bot.pos.z = moved.z;
+      if (bot.speed < 0.5 && d > 2) {
+        bot.stuckT = (bot.stuckT ?? 0) + dt;
+        if (bot.stuckT > 0.6) {
+          bot.detourT = 0.85;
+          bot.detourSide = bot.slot % 2 === 0 ? 1 : -1;
+          bot.stuckT = 0;
+        }
+      } else {
+        bot.stuckT = 0;
+      }
     } else bot.speed = 0;
   } else bot.speed = 0;
   bot.stepPhase += bot.speed * dt * 1.7;

@@ -48,9 +48,9 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 
-const hemi = new THREE.HemisphereLight(0x8fb4d8, 0x2c2f26, 0.85);
+const hemi = new THREE.HemisphereLight(0x8fb4d8, 0x3a3f33, 1.05);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffd9b0, 1.6);
+const sun = new THREE.DirectionalLight(0xffd9b0, 1.9);
 sun.position.set(-28, 38, 14);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -975,13 +975,17 @@ canvas.addEventListener('click', () => {
 // entry's screenshots are captured from. Bots and phases freeze; the render loop runs.
 let shotMode = params.get('shot');
 if (shotMode) {
-  hud.showMenu(false);
-  if (shotMode === 'buy') {
+  if (shotMode === 'start') {
+    hud.showMenu(true); // the title over the orbiting yard is the cover pose
+  } else if (shotMode === 'buy') {
+    hud.showMenu(false);
     startMatch();
+    hud.banner('', '', 0.01); // clear the round banner: the menu is the subject
     playerCombatant.money = 4750;
     hud.refreshBuy(playerCombatant);
     hud.setBuyVisible(true);
   } else if (shotMode === 'play' || shotMode === 'end') {
+    hud.showMenu(false);
     startMatch();
     hud.setBuyVisible(false);
     match.phase = PHASE.LIVE;
@@ -990,6 +994,7 @@ if (shotMode) {
     playerGuns = { p9: createGun('p9'), k4: createGun('k4') };
     currentGunId = 'k4';
     if (shotMode === 'play') {
+      hud.banner('', '', 0.01);
       match.score = [3, 2];
       match.round = 6;
       playerCombatant.health = 76;
@@ -998,11 +1003,12 @@ if (shotMode) {
       gun().mag = 17;
       placeAtSpawn(player, 0.5, -3.5, 0.5, -20);
       const enemy = bots.find((b) => b.combatant.team === 1);
-      enemy.pos.x = 1.9;
-      enemy.pos.z = -15.5;
+      enemy.pos.x = 1.6;
+      enemy.pos.z = -12.5;
       enemy.yaw = Math.PI;
       enemy.group.position.set(enemy.pos.x, 0, enemy.pos.z);
       enemy.group.rotation.y = enemy.yaw;
+      muzzleLight.position.set(1.6, 1.35, -13.1); // its muzzle flash lights the lane
       const ally = bots.find((b) => b.combatant.team === 0);
       ally.pos.x = -3.4;
       ally.pos.z = -9;
@@ -1020,17 +1026,21 @@ if (shotMode) {
       match.charge.t = 26;
       chargeMesh.position.set(-20.4, 0, -17.6);
       chargeMesh.visible = true;
-      placeAtSpawn(player, -17.8, -13.8, -21, -18.5);
+      placeAtSpawn(player, -16.6, -12.2, -21, -18.5);
       const ally = bots.find((b) => b.combatant.team === 0);
-      ally.pos.x = -19.2;
-      ally.pos.z = -16.2;
-      ally.yaw = 2.4;
+      ally.pos.x = -23.4;
+      ally.pos.z = -20.6;
+      ally.yaw = -2.48; // watching the player's approach lane
       ally.group.position.set(ally.pos.x, 0, ally.pos.z);
       ally.group.rotation.y = ally.yaw;
       hud.banner('CHARGE PLANTED', 'Site A — hold E by the charge to defuse', 60);
     }
   }
 }
+
+// A small handle for the maker's own play-tests (serve the game, drive it from a
+// browser console or an automation script, read the match state back out).
+window.__coldYard = { match, player, playerCombatant, bots, fighters };
 
 // --- The loop: fixed-step simulation, one render per animation frame.
 let lastMs = performance.now();

@@ -13,12 +13,12 @@ const SOLIDS = [
 
   // A site (west): a ring of containers with two entrances, a crane overhead.
   { x: -21, z: -24.5, w: 13, d: 2.4, h: 2.6, c: 'B' }, { x: -26.5, z: -18, w: 2.4, d: 11, h: 2.6, c: 'A' },
-  { x: -15.5, z: -18, w: 2.4, d: 11, h: 2.6, c: 'D' }, { x: -21, z: -12.5, w: 5, d: 2.4, h: 2.6, c: 'C' },
+  { x: -15.5, z: -18, w: 2.4, d: 11, h: 2.6, c: 'D' }, { x: -24.5, z: -12.5, w: 4, d: 2.4, h: 2.6, c: 'C' }, // south wall offset: the entrance stays open
   { x: -24, z: -19, w: 4.4, d: 2.2, h: 2.6, c: 'A', stack: true }, // stacked pair inside A
 
   // B site (east): depot sheds and a container cross.
   { x: 21, z: -25, w: 12, d: 2.4, h: 2.6, c: 'D' }, { x: 26.5, z: -19, w: 2.4, d: 10, h: 2.6, c: 'B' },
-  { x: 15.5, z: -19, w: 2.4, d: 10, h: 2.6, c: 'A' }, { x: 21, z: -13.5, w: 5, d: 2.4, h: 2.6, c: 'C' },
+  { x: 15.5, z: -19, w: 2.4, d: 10, h: 2.6, c: 'A' }, { x: 24.5, z: -13.5, w: 4, d: 2.4, h: 2.6, c: 'C' }, // south wall offset: the entrance stays open
   { x: 21, z: -19.5, w: 6, d: 2.2, h: 1.3, c: 'crate' }, // low depot crates: cover you can shoot over
 
   // Mid: two container rows with a cross gap at z = 2, so mid can be split or crossed.
@@ -37,7 +37,7 @@ const SOLIDS = [
   // Spawn yards: low cover so neither spawn is a shooting gallery.
   { x: -8, z: 26, w: 5, d: 2.2, h: 1.3, c: 'crate' }, { x: 8, z: 26, w: 5, d: 2.2, h: 1.3, c: 'crate' },
   { x: -8, z: -27, w: 5, d: 2.2, h: 1.3, c: 'crate' }, { x: 8, z: -27, w: 5, d: 2.2, h: 1.3, c: 'crate' },
-  { x: 0, z: 20, w: 4.4, d: 2.2, h: 2.6, c: 'C' }, { x: 0, z: -27.5, w: 4.4, d: 2.2, h: 2.6, c: 'B' },
+  { x: -5.5, z: 20, w: 4.4, d: 2.2, h: 2.6, c: 'C' }, { x: 5.5, z: -27.5, w: 4.4, d: 2.2, h: 2.6, c: 'B' }, // offset from the mid lane mouths
 ];
 
 // Sites: the charge can be planted anywhere inside the circle.
