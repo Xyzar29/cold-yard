@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COLD YARD — a tactical FPS in three.js</title>
+<style>
+  :root { --blue:#3f8cff; --orange:#ff7847; --ink:#e8eef4; --dim:#9fb0bf; --panel:rgba(13,19,26,.88); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; background:#10161d; }
+  body { font-family: system-ui, "Segoe UI", Roboto, sans-serif; color:var(--ink); }
+  canvas#game { display:block; width:100%; height:100%; }
+  .overlay { position:fixed; inset:0; pointer-events:none; }
+
+  /* Top centre: clock and score */
+  #topbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); text-align:center; }
+  #timer { font-size:30px; font-weight:800; letter-spacing:2px; text-shadow:0 2px 8px #000; }
+  #charge-state { font-size:12px; font-weight:700; color:#ff5a47; letter-spacing:1px; min-height:15px; }
+  #scorebar { display:flex; gap:14px; align-items:center; justify-content:center; margin-top:2px; }
+  .score { font-size:22px; font-weight:800; padding:0 10px; border-radius:4px; background:var(--panel); }
+  #score-l { color:var(--blue); } #score-r { color:var(--orange); }
+  #round-label { font-size:11px; letter-spacing:2px; color:var(--dim); }
+  .pips { font-size:10px; letter-spacing:2px; }
+  #pips-l { color:var(--blue); } #pips-r { color:var(--orange); }
+
+  /* Bottom corners */
+  #bl { position:absolute; left:22px; bottom:18px; }
+  #health { font-size:44px; font-weight:800; text-shadow:0 2px 8px #000; line-height:1; }
+  #armour { font-size:13px; color:var(--dim); letter-spacing:1px; min-height:16px; }
+  #br { position:absolute; right:22px; bottom:18px; text-align:right; }
+  #weapon-name { font-size:13px; letter-spacing:2px; color:var(--dim); }
+  #ammo { font-size:44px; font-weight:800; text-shadow:0 2px 8px #000; line-height:1; }
+  #reserve { font-size:20px; color:var(--dim); font-weight:600; }
+  #money { font-size:20px; font-weight:800; color:#ffd24a; margin-top:2px; }
+  #grenades { font-size:11px; color:var(--dim); letter-spacing:1px; margin-top:2px; }
+
+  /* Crosshair: four ticks that breathe with the gun's real spread */
+  #crosshair { position:absolute; left:50%; top:50%; width:0; height:0; --spread:10px; }
+  #crosshair i { position:absolute; background:#eaffea; box-shadow:0 0 3px #000; }
+  #crosshair i:nth-child(1) { width:2px; height:8px; left:-1px; top:calc(-8px - var(--spread)); }
+  #crosshair i:nth-child(2) { width:2px; height:8px; left:-1px; top:var(--spread); }
+  #crosshair i:nth-child(3) { width:8px; height:2px; top:-1px; left:calc(-8px - var(--spread)); }
+  #crosshair i:nth-child(4) { width:8px; height:2px; top:-1px; left:var(--spread); }
+  #hitmarker { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(45deg);
+    font-size:22px; font-weight:300; opacity:0; transition:opacity .05s; }
+  #scope { position:absolute; inset:0; opacity:0; background:radial-gradient(circle at center, transparent 30%, #000 31.5%); }
+  #scope::before, #scope::after { content:""; position:absolute; background:rgba(0,0,0,.85); }
+  #scope::before { left:50%; top:0; width:1px; height:100%; }
+  #scope::after { top:50%; left:0; height:1px; width:100%; }
+
+  #killfeed { position:absolute; right:18px; top:64px; text-align:right; font-size:13px; }
+  .feed-row { background:var(--panel); border-radius:4px; padding:3px 8px; margin-bottom:4px; }
+  .feed-gun { color:var(--dim); font-size:12px; }
+  #minimap { position:absolute; right:18px; top:190px; border:1px solid rgba(255,255,255,.18); border-radius:6px; }
+
+  #banner { position:absolute; top:26%; left:0; right:0; text-align:center; opacity:0; transition:opacity .3s; }
+  #banner-title { font-size:44px; font-weight:900; letter-spacing:4px; text-shadow:0 3px 14px #000; }
+  #banner-sub { font-size:16px; color:var(--dim); letter-spacing:2px; margin-top:4px; }
+  #hint { position:absolute; bottom:110px; left:0; right:0; text-align:center; font-size:14px; color:var(--ink);
+    text-shadow:0 1px 6px #000; letter-spacing:.5px; }
+  #spectate { position:absolute; top:70px; left:50%; transform:translateX(-50%); font-size:13px;
+    letter-spacing:2px; color:var(--dim); display:none; }
+  #channel { position:absolute; left:50%; bottom:170px; transform:translateX(-50%); width:280px; display:none;
+    background:var(--panel); border-radius:6px; padding:8px 12px; }
+  #channel-label { font-size:12px; letter-spacing:2px; margin-bottom:5px; }
+  #channel-track { height:8px; background:#222b34; border-radius:4px; overflow:hidden; }
+  #channel-fill { height:100%; width:0; background:#ffd24a; }
+
+  #vignette { position:absolute; inset:0; background:radial-gradient(circle, transparent 55%, rgba(200,30,20,.55) 100%); opacity:0; }
+  #flash { position:absolute; inset:0; background:#fff; opacity:0; }
+
+  /* Buy menu */
+  #buy-menu { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:430px;
+    background:var(--panel); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:18px 20px; display:none; }
+  #buy-menu h2 { font-size:18px; letter-spacing:3px; display:flex; justify-content:space-between; }
+  #buy-money { color:#ffd24a; }
+  #buy-timer { color:var(--dim); font-size:13px; }
+  .buy-item { display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.07); font-size:15px; }
+  .buy-key { background:#2a3540; border-radius:4px; padding:2px 8px; font-weight:700; }
+  .buy-label { flex:1; }
+  .buy-price { color:#ffd24a; font-weight:700; }
+  .buy-state { color:#7dd87d; font-size:11px; letter-spacing:1px; width:52px; text-align:right; }
+  .buy-item.poor { opacity:.45; }
+  .buy-item.owned .buy-label { color:#7dd87d; }
+  #buy-menu p { margin-top:10px; font-size:12px; color:var(--dim); }
+
+  /* Title and end screens */
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(10,15,21,.25), rgba(10,15,21,.78)); text-align:center; pointer-events:auto; }
+  .screen h1 { font-size:64px; font-weight:900; letter-spacing:8px; text-shadow:0 4px 22px #000; }
+  .screen h1 span { color:var(--orange); }
+  .screen .tag { color:var(--dim); letter-spacing:3px; font-size:14px; margin-top:6px; }
+  .screen .rules { margin-top:22px; font-size:14.5px; line-height:1.65; color:var(--ink); max-width:560px; }
+  .screen .rules b { color:#ffd24a; }
+  #play-btn, #again-btn { margin-top:26px; font-size:19px; font-weight:800; letter-spacing:2px; padding:13px 42px;
+    background:var(--orange); color:#14100c; border:none; border-radius:8px; cursor:pointer; }
+  #play-btn:hover, #again-btn:hover { filter:brightness(1.12); }
+  .keys { margin-top:18px; font-size:12.5px; color:var(--dim); line-height:1.7; }
+  #match-over { display:none; }
+  #over-title { font-size:52px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="overlay" id="hud">
+  <div id="vignette"></div>
+  <div id="flash"></div>
+  <div id="scope"></div>
+  <div id="topbar">
+    <div id="timer">1:40</div>
+    <div id="charge-state"></div>
+    <div id="scorebar">
+      <span class="pips" id="pips-l"></span>
+      <span class="score" id="score-l">0</span>
+      <span id="round-label">ROUND 1</span>
+      <span class="score" id="score-r">0</span>
+      <span class="pips" id="pips-r"></span>
+    </div>
+  </div>
+  <div id="spectate"></div>
+  <canvas id="minimap" width="150" height="150"></canvas>
+  <div id="killfeed"></div>
+  <div id="bl">
+    <div id="health">100</div>
+    <div id="armour"></div>
+  </div>
+  <div id="br">
+    <div id="weapon-name">P9 SIDEARM</div>
+    <div><span id="ammo">12</span> <span id="reserve">/ 48</span></div>
+    <div id="money">$800</div>
+    <div id="grenades"></div>
+  </div>
+  <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+  <div id="hitmarker">✕</div>
+  <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
+  <div id="hint"></div>
+  <div id="channel"><div id="channel-label">DEFUSING</div><div id="channel-track"><div id="channel-fill"></div></div></div>
+
+  <div id="buy-menu">
+    <h2><span>BUY EQUIPMENT</span><span id="buy-money">$800</span></h2>
+    <div id="buy-timer">0:10</div>
+    <div id="buy-items"></div>
+    <p>Press the number to buy. B closes the menu — the round starts when the clock runs out.</p>
+  </div>
+
+  <div class="screen" id="menu">
+    <h1>COLD <span>YARD</span></h1>
+    <div class="tag">A ROUND-BASED TACTICAL FPS · WARDENS vs JACKALS · THREE.JS</div>
+    <div class="rules">
+      The Jackals carry a breach charge into the container yard. Plant it at site <b>A</b> or <b>B</b>
+      and it blows in 40 seconds — unless the Wardens defuse it. Win rounds by planting, defusing,
+      or wiping the other team. Earn money, buy rifles, armour and grenades, first to <b>7 rounds</b>.
+      Accuracy counts: stop, crouch, and tap — spraying on the move hits nothing but air.
+    </div>
+    <button id="play-btn">DEPLOY AS A WARDEN</button>
+    <div class="keys">
+      WASD move · mouse look · click fire · right-click aim · R reload · 1/2 weapons · 4/5/6 grenades<br>
+      B buy menu · E plant / defuse · Ctrl crouch · Space jump · Shift is not run — walking is loud enough
+    </div>
+  </div>
+
+  <div class="screen" id="match-over">
+    <h1 id="over-title">VICTORY</h1>
+    <div class="tag" id="over-sub"></div>
+    <button id="again-btn">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
